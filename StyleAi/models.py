@@ -1,17 +1,8 @@
-"""
-models.py
----------
-UML class diagram'dan birebir türetilmiş veri modelleri.
-Encapsulation, Inheritance ve Polymorphism örneklerini içerir.
-"""
-
 from enum import Enum
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List
 from datetime import datetime
 
-
-# ─── ENUM TANIMLAMALARI ──────────────────────────────────────────────────────
 
 class Season(Enum):
     SPRING = "spring"
@@ -47,20 +38,8 @@ class RiskLevel(Enum):
     HIGH = "high"
 
 
-# ─── OUTFIT (UML'den birebir) ─────────────────────────────────────────────────
-
 @dataclass
 class Outfit:
-    """
-    UML: Outfit
-    +id: int
-    +top: String
-    +bottom: String
-    +season: Season
-    +formalityLevel: FormalityLevel
-
-    Encapsulation: tüm alanlar __init__ üzerinden kontrollü set edilir.
-    """
     id: int
     top: str
     bottom: str
@@ -71,12 +50,11 @@ class Outfit:
     color_palette: str = ""
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
 
-    # ── Encapsulation: property ile doğrulama ───────────────────────────────
     def __post_init__(self):
         if not self.top:
-            raise ValueError("Outfit mutlaka bir üst parça içermelidir.")
+            raise ValueError()
         if not self.bottom:
-            raise ValueError("Outfit mutlaka bir alt parça içermelidir.")
+            raise ValueError()
 
     def to_dict(self) -> dict:
         return {
@@ -91,50 +69,36 @@ class Outfit:
             "created_at": self.created_at,
         }
 
-    def __repr__(self):
-        return (f"Outfit(id={self.id}, top='{self.top}', "
-                f"bottom='{self.bottom}', season={self.season.value})")
-
-
-# ─── CLOTHING ITEM (Inheritance tabanı) ──────────────────────────────────────
 
 class ClothingItem:
-    """
-    Temel giysi sınıfı.
-    Inheritance: Shirt, Pants, Shoes, Accessory bu sınıftan türer.
-    Encapsulation: _name ve _color private alanlar.
-    """
-
     def __init__(self, item_id: int, name: str, color: str,
                  season: Season, formality: FormalityLevel):
-        self._id = item_id  # encapsulation: private
+        self._id = item_id
         self._name = name
         self._color = color
         self.season = season
         self.formality = formality
 
-    # ── Property getter / setter (Encapsulation) ────────────────────────────
     @property
-    def name(self) -> str:
+    def name(self):
         return self._name
 
     @name.setter
     def name(self, value: str):
         if not value.strip():
-            raise ValueError("Parça adı boş olamaz.")
+            raise ValueError()
         self._name = value.strip()
 
     @property
-    def color(self) -> str:
+    def color(self):
         return self._color
 
     @color.setter
     def color(self, value: str):
         self._color = value.strip().lower()
 
-    # ── Polymorphism: alt sınıflar override eder ────────────────────────────
     def get_category(self) -> str:
-        raise NotImplementedError("Alt sınıf get_category() tanımlamalıdır.")
+        raise NotImplementedError()
 
     def is_suitable_for(self, season: Season) -> bool:
         return self.season == season
@@ -149,32 +113,23 @@ class ClothingItem:
             "category": self.get_category(),
         }
 
-    def __repr__(self):
-        return f"{self.__class__.__name__}(name='{self._name}', color='{self._color}')"
-
-
-# ── Alt sınıflar (Inheritance + Polymorphism) ──────────────────────────────
 
 class Shirt(ClothingItem):
-    """Üst giysi — ClothingItem'dan türer."""
-
     def __init__(self, item_id, name, color, season, formality,
                  sleeve_type: str = "long"):
         super().__init__(item_id, name, color, season, formality)
-        self.sleeve_type = sleeve_type  # sadece Shirt'e özgü alan
+        self.sleeve_type = sleeve_type
 
-    def get_category(self) -> str:  # Polymorphism override
+    def get_category(self) -> str:
         return "top"
 
     def is_suitable_for(self, season: Season) -> bool:
         if self.sleeve_type == "short":
             return season in (Season.SPRING, Season.SUMMER)
-        return True  # uzun kollu her mevsim
+        return True
 
 
 class Pants(ClothingItem):
-    """Alt giysi."""
-
     def __init__(self, item_id, name, color, season, formality,
                  pant_type: str = "jeans"):
         super().__init__(item_id, name, color, season, formality)
@@ -185,8 +140,6 @@ class Pants(ClothingItem):
 
 
 class Shoes(ClothingItem):
-    """Ayakkabı."""
-
     def __init__(self, item_id, name, color, season, formality,
                  shoe_type: str = "sneaker"):
         super().__init__(item_id, name, color, season, formality)
@@ -195,17 +148,8 @@ class Shoes(ClothingItem):
     def get_category(self) -> str:
         return "shoes"
 
-    def is_suitable_for(self, season: Season) -> bool:
-        if self.shoe_type == "sandal":
-            return season in (Season.SPRING, Season.SUMMER)
-        if self.shoe_type == "boot":
-            return season in (Season.AUTUMN, Season.WINTER)
-        return True
-
 
 class Accessory(ClothingItem):
-    """Aksesuar."""
-
     def __init__(self, item_id, name, color, season, formality,
                  accessory_type: str = "bag"):
         super().__init__(item_id, name, color, season, formality)
@@ -215,16 +159,8 @@ class Accessory(ClothingItem):
         return "accessory"
 
 
-# ─── EVENT CONTEXT (UML'den birebir) ─────────────────────────────────────────
-
 @dataclass
 class EventContext:
-    """
-    UML: EventContext
-    +eventType: EventType
-    +isIndoor: boolean
-    +season: Season
-    """
     event_type: EventType
     is_indoor: bool
     season: Season
@@ -233,7 +169,6 @@ class EventContext:
     color_preference: str = ""
 
     def get_duration_hours(self) -> float:
-        """Dışarıda kalınacak süreyi hesapla."""
         try:
             sh, sm = map(int, self.start_time.split(":"))
             eh, em = map(int, self.end_time.split(":"))
@@ -253,51 +188,35 @@ class EventContext:
         }
 
 
-# ─── USER (UML'den birebir) ───────────────────────────────────────────────────
-
 class User:
-    """
-    UML: User
-    +id: int
-    +email: String
-    +gender: Gender
-    +getWardrobe(): List<Outfit>
-
-    Encapsulation: _wardrobe dışarıdan doğrudan erişilemiyor.
-    """
-
     def __init__(self, user_id: int, email: str, gender: Gender,
                  name: str = ""):
         self._id = user_id
         self._email = email
         self._gender = gender
         self._name = name
-        self._wardrobe: List[Outfit] = []  # private
+        self._wardrobe: List[Outfit] = []
 
-    # ── Encapsulation: property'ler ─────────────────────────────────────────
     @property
-    def id(self) -> int:
+    def id(self):
         return self._id
 
     @property
-    def email(self) -> str:
+    def email(self):
         return self._email
 
     @property
-    def gender(self) -> Gender:
+    def gender(self):
         return self._gender
 
     @property
-    def name(self) -> str:
+    def name(self):
         return self._name
 
-    # ── UML metodu: getWardrobe() ────────────────────────────────────────────
     def get_wardrobe(self) -> List[Outfit]:
-        return list(self._wardrobe)  # kopya döndür (encapsulation)
+        return list(self._wardrobe)
 
     def add_to_wardrobe(self, outfit: Outfit) -> None:
-        if not isinstance(outfit, Outfit):
-            raise TypeError("Sadece Outfit nesnesi eklenebilir.")
         self._wardrobe.append(outfit)
 
     def remove_from_wardrobe(self, outfit_id: int) -> bool:
@@ -315,6 +234,3 @@ class User:
             "gender": self._gender.value,
             "wardrobe_count": len(self._wardrobe),
         }
-
-    def __repr__(self):
-        return f"User(id={self._id}, email='{self._email}')"
