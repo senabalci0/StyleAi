@@ -1,4 +1,4 @@
-# ✨ StyleAi
+#  StyleAi
 
 AI-powered outfit recommendation system built with Python OOP principles.
 
