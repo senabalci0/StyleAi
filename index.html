@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StyleAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="planner">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">StyleAI</p>
+            <h1>Create outfits based on weather, time, and your style.</h1>
+          </div>
+          <div class="weather-chip" id="weatherChip">
+            <span id="chipTemp">--°</span>
+            <small id="chipSummary">Waiting for location</small>
+          </div>
+        </header>
+
+        <section class="workspace">
+          <div class="photo-panel">
+            <div class="photo-stage" id="photoStage">
+              <video id="cameraFeed" autoplay playsinline hidden></video>
+              <img id="previewImage" alt="Uploaded clothing or inspiration photo" hidden />
+              <div class="empty-photo" id="emptyPhoto">
+                <span>+</span>
+                <strong>Add photo</strong>
+                <small>Clothing, wardrobe, or inspiration image</small>
+              </div>
+            </div>
+            <div class="photo-actions">
+              <label class="icon-button primary" title="Upload photo">
+                <input id="photoInput" type="file" accept="image/*" />
+                <span>Upload</span>
+              </label>
+              <button class="icon-button" id="cameraButton" type="button" title="Open camera">Camera</button>
+              <button class="icon-button" id="captureButton" type="button" title="Take photo" hidden>Capture</button>
+              <button class="icon-button danger" id="clearPhotoButton" type="button" title="Clear photo">Clear</button>
+            </div>
+            <div class="closet-add">
+              <label>
+                Item name
+                <input id="closetName" type="text" placeholder="White shirt, black jeans..." />
+              </label>
+              <label>
+                Category
+                <select id="closetCategory">
+                  <option value="top">Top</option>
+                  <option value="bottom">Bottom</option>
+                  <option value="outerwear">Outerwear</option>
+                  <option value="shoes">Shoes</option>
+                  <option value="accessory">Accessory</option>
+                  <option value="dress">Dress / suit</option>
+                </select>
+              </label>
+              <button class="generate-button" id="addToCloset" type="button">Add to closet</button>
+            </div>
+          </div>
+
+          <form class="control-panel" id="styleForm">
+            <div class="field-row">
+              <label>
+                Day
+                <select id="daySelect"></select>
+              </label>
+              <label>
+                Start
+                <input id="startTime" type="time" value="08:00" />
+              </label>
+              <label>
+                End
+                <input id="endTime" type="time" value="10:00" />
+              </label>
+            </div>
+
+            <fieldset>
+              <legend>Style</legend>
+              <div class="style-grid" id="styleOptions">
+                <label><input type="radio" name="style" value="daily" checked /> Casual</label>
+                <label><input type="radio" name="style" value="sport" /> Sport</label>
+                <label><input type="radio" name="style" value="smart" /> Smart</label>
+                <label><input type="radio" name="style" value="wedding" /> Wedding</label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Priorities</legend>
+              <div class="toggle-list">
+                <label><input id="comfort" type="checkbox" checked /> Comfort</label>
+                <label><input id="rainReady" type="checkbox" checked /> Rain ready</label>
+                <label><input id="photoAware" type="checkbox" checked /> Use photo context</label>
+              </div>
+            </fieldset>
+
+            <button class="generate-button" type="submit">Suggest outfit</button>
+          </form>
+        </section>
+
+        <section class="closet-section">
+          <div class="section-heading">
+            <p>My Closet</p>
+            <button id="clearCloset" type="button">Clear closet</button>
+          </div>
+          <div id="closetGrid" class="closet-grid"></div>
+        </section>
+      </section>
+
+      <aside class="result-panel">
+        <section class="recommendation">
+          <div class="section-heading">
+            <p>Recommendation</p>
+            <button id="refreshWeather" type="button">Refresh weather</button>
+          </div>
+          <div id="weatherStatus" class="status-line">Allow location access to get automatic weather updates.</div>
+          <div class="weather-strip" id="weatherStrip">
+            <span>--°C</span>
+            <span>Wind -- km/h</span>
+            <span>Rain --%</span>
+          </div>
+          <article id="outfitCard" class="outfit-card">
+            <p class="muted">Choose a time range and style, then generate an outfit.</p>
+          </article>
+          <div class="decision-actions">
+            <button id="saveOutfit" type="button" disabled>I like it, save</button>
+            <button id="rejectOutfit" type="button" disabled>Not for me</button>
+          </div>
+        </section>
+
+        <section class="saved-section">
+          <div class="section-heading">
+            <p>Saved Outfits</p>
+            <button id="clearSaved" type="button">Clear</button>
+          </div>
+          <div id="savedList" class="saved-list"></div>
+        </section>
+      </aside>
+    </main>
+
+    <canvas id="snapshotCanvas" hidden></canvas>
+    <script src="app.js"></script>
+  </body>
+</html>
