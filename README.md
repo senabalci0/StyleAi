@@ -20,7 +20,7 @@ An AI-powered outfit planner that suggests clothing based on real-time weather, 
 ```
 styleai/
 ├── index.html      # App layout and structure
-├── styles.css      # Styling and responsive design
+├── style.css       # Styling and responsive design
 ├── app.js          # Frontend logic (weather, closet, UI)
 └── app.py          # Flask backend (outfit generation)
 ```

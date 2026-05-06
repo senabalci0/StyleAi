@@ -1,9 +1,11 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from pathlib import Path
 import random
 
 app = Flask(__name__)
 CORS(app)
+BASE_DIR = Path(__file__).resolve().parent
 
 STYLE_DB = {
     "daily": {
@@ -75,6 +77,19 @@ def generate():
         "confidence": "high",
     }
     return jsonify(response)
+
+
+@app.route("/")
+def home():
+    return send_from_directory(BASE_DIR, "index.html")
+
+
+@app.route("/<path:filename>")
+def static_files(filename):
+    allowed_files = {"app.js", "style.css", "index.html"}
+    if filename in allowed_files:
+        return send_from_directory(BASE_DIR, filename)
+    return ("Not Found", 404)
 
 
 if __name__ == "__main__":
