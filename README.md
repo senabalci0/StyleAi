@@ -73,10 +73,3 @@ Then open `http://localhost:8080` in your browser.
 - flask-cors
 - A modern browser (Chrome, Firefox, Safari, Edge)
 
----
-
-## Notes
-
-- Closet items and saved outfits are stored in `localStorage` — they persist between sessions in the same browser
-- Location access is requested for accurate weather; defaults to Istanbul if denied
-- Camera capture requires `localhost` or HTTPS
