@@ -294,7 +294,6 @@ function renderRecommendation(rec) {
     ${rec.note ? `<p class="muted">${rec.note}</p>` : ""}
     ${rec.tip ? `<p class="muted">💡 ${rec.tip}</p>` : ""}
   `;
-  // FIX: butonları aktif et
   saveOutfit.disabled = false;
   rejectOutfit.disabled = false;
 }
@@ -401,7 +400,6 @@ closetGrid.addEventListener("click", (event) => {
   renderCloset();
 });
 
-// FIX: styleForm submit — state.recommendation set ediliyor, butonlar açılıyor
 styleForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -434,7 +432,6 @@ styleForm.addEventListener("submit", async (e) => {
     };
     const closetPieces = piecesFromCloset(style, weather);
 
-    // FIX: state.recommendation artık set ediliyor
     state.recommendation = {
       id: crypto.randomUUID(),
       title: data.title,
