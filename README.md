@@ -53,7 +53,6 @@ python -m http.server 8080
 
 Then open `http://localhost:8080` in your browser.
 
-> ⚠️ Do not open `index.html` directly by double-clicking — the browser will block requests to Flask due to CORS restrictions on the `file://` protocol.
 
 ---
 
