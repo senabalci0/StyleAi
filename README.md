@@ -26,7 +26,7 @@ JavaScript fallback recommendation engine.
 1. Open this folder in PyCharm.
 2. Open `server.py`.
 3. Press Run.
-4. Visit `http://127.0.0.1:5372`.
+4. Visit `http://127.0.0.1:5173`.
 
 ## Features
 
