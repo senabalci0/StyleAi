@@ -43,48 +43,188 @@ const categoryLabels = {
   dress: "Dress / suit",
 };
 
-const styleCopy = {
+const styleConfig = {
   daily: {
     label: "Casual",
+    formality: 0,
+    avoidCategories: ["dress"],
+    blockedKeywords: ["suit", "blazer", "tuxedo", "gown", "heels", "tie", "bow tie"],
+    requiredCategories: { top: "a top", bottom: "bottoms", shoes: "shoes" },
     base: ["Plain T-shirt or light knit", "Relaxed jeans or chinos", "Clean sneakers", "Minimal watch or small accessory"],
     mood: "easy, polished, and comfortable all day",
   },
   sport: {
     label: "Sport",
+    formality: 0,
+    avoidCategories: ["dress", "accessory"],
+    blockedKeywords: ["suit", "blazer", "tuxedo", "gown", "heels", "tie", "bow tie", "dress shirt", "loafer", "oxford", "jeans", "chinos", "trousers"],
+    requiredCategories: { top: "a sport top", bottom: "sport bottoms", shoes: "sport shoes" },
     base: ["Breathable top", "Joggers or leggings", "Supportive sneakers", "Light zip layer"],
     mood: "active, light, and easy to move in",
   },
   smart: {
     label: "Smart",
+    formality: 2,
+    avoidCategories: [],
+    blockedKeywords: ["t-shirt", "tshirt", "hoodie", "sweatshirt", "jogger", "legging", "shorts", "flip flop", "crocs", "tracksuit", "eşofman"],
+    requiredCategories: { top: "a smart top (shirt/blouse)", bottom: "smart bottoms (trousers/skirt)", shoes: "smart shoes" },
     base: ["Shirt, blouse, or fine turtleneck", "Tailored trousers or midi skirt", "Loafers, boots, or refined sneakers", "Clean-lined jacket"],
     mood: "intentional, simple, and city-ready",
   },
   wedding: {
     label: "Wedding",
+    formality: 3,
+    avoidCategories: ["top", "bottom"],
+    blockedKeywords: ["t-shirt", "tshirt", "hoodie", "sweatshirt", "jogger", "legging", "shorts", "sneaker", "flip flop", "crocs", "tracksuit", "eşofman", "jeans", "chinos", "cargo", "parka", "puffer"],
+    requiredCategories: { dress: "a dress or suit (add one under 'Dress / suit' category)" },
     base: ["Dress or suit", "Elegant shoes", "Subtle jewelry", "Photo-friendly finishing layer"],
     mood: "celebratory, elegant, and balanced",
   },
 };
 
+const colorGroups = {
+  neutral: ["white", "off-white", "cream", "beige", "ivory", "light gray", "gray", "grey", "dark gray", "charcoal", "black"],
+  earth: ["brown", "tan", "camel", "khaki", "olive", "dark green", "forest green", "rust", "terracotta", "mustard"],
+  pastel: ["light blue", "sky blue", "baby blue", "light pink", "blush", "lavender", "mint", "light yellow", "peach"],
+  bold: ["red", "bright red", "orange", "yellow", "green", "bright blue", "cobalt", "purple", "fuchsia", "hot pink"],
+  jewel: ["navy", "burgundy", "wine", "emerald", "teal", "deep purple", "royal blue", "dark brown"],
+};
+
+const harmonyMap = {
+  neutral: ["neutral", "earth", "pastel", "bold", "jewel"],
+  earth: ["earth", "neutral", "jewel"],
+  pastel: ["pastel", "neutral"],
+  bold: ["bold", "neutral"],
+  jewel: ["jewel", "neutral", "earth"],
+};
+
+function detectColorGroup(name) {
+  const lower = name.toLowerCase();
+  for (const [group, keywords] of Object.entries(colorGroups)) {
+    if (keywords.some((kw) => lower.includes(kw))) return group;
+  }
+  return null;
+}
+
+function colorHarmonyScore(pieces) {
+  const groups = pieces.map((p) => detectColorGroup(p.name)).filter(Boolean);
+  if (groups.length < 2) return { score: 50, note: "Add color keywords (e.g. 'navy trousers') to your item names for color harmony analysis." };
+
+  const base = groups[0];
+  const compatible = harmonyMap[base] || ["neutral"];
+  const matches = groups.slice(1).filter((g) => compatible.includes(g)).length;
+  const score = Math.round((matches / (groups.length - 1)) * 100);
+
+  let note;
+  if (score >= 80) note = `Great color harmony — pieces work well together (${base} palette).`;
+  else if (score >= 50) note = `Decent color mix — keep extras in neutral tones to avoid clashing.`;
+  else note = `Color mismatch detected. Try replacing clashing pieces with neutrals.`;
+
+  return { score, note };
+}
+
+const formalKws = ["suit", "blazer", "dress shirt", "tie", "oxford", "loafer", "trousers", "skirt", "heels", "dress"];
+const casualKws = ["t-shirt", "tshirt", "jeans", "sneaker", "hoodie", "jogger", "legging", "sweatshirt", "shorts"];
+
+function formalityScore(name) {
+  const lower = name.toLowerCase();
+  const formalHits = formalKws.filter((k) => lower.includes(k)).length;
+  const casualHits = casualKws.filter((k) => lower.includes(k)).length;
+  if (formalHits >= 2) return 3;
+  if (formalHits === 1) return 2;
+  if (casualHits >= 1) return 0;
+  return 1;
+}
+
+function isBlocked(name, blockedKeywords) {
+  const lower = name.toLowerCase();
+  return blockedKeywords.some((kw) => lower.includes(kw));
+}
+
+function pickClosetItemsForStyle(style, weather) {
+  const config = styleConfig[style];
+  const targetFormality = config.formality;
+  const blocked = config.blockedKeywords || [];
+  const required = config.requiredCategories || {};
+
+  const eligible = state.closet.filter(
+    (item) => !config.avoidCategories.includes(item.category) && !isBlocked(item.name, blocked),
+  );
+
+  function candidatesFor(category) {
+    return eligible
+      .filter((item) => item.category === category)
+      .sort((a, b) => Math.abs(formalityScore(a.name) - targetFormality) - Math.abs(formalityScore(b.name) - targetFormality));
+  }
+
+  function pick(category) {
+    const pool = candidatesFor(category).slice(0, 3);
+    return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+  }
+
+  const picks = [];
+  const missingWarnings = [];
+
+  if (style === "wedding") {
+    const item = pick("dress");
+    if (item) {
+      picks.push(item);
+    }
+  } else {
+    const top = pick("top");
+    const bottom = pick("bottom");
+    if (top) picks.push(top);
+    if (bottom) picks.push(bottom);
+  }
+
+  const temp = weather?.temp ?? 18;
+  const wind = weather?.wind ?? 12;
+  const precip = weather?.precip ?? 20;
+  if (temp <= 18 || wind >= 20 || precip >= 45) {
+    const outer = pick("outerwear");
+    if (outer) picks.push(outer);
+  }
+
+  if (!config.avoidCategories.includes("shoes")) {
+    const shoes = pick("shoes");
+    if (shoes) picks.push(shoes);
+  }
+
+  if (style !== "sport" && !config.avoidCategories.includes("accessory")) {
+    const acc = pick("accessory");
+    if (acc) picks.push(acc);
+  }
+
+  const pickedCategories = new Set(picks.map((p) => p.category));
+  for (const [cat, description] of Object.entries(required)) {
+    if (!pickedCategories.has(cat)) {
+      const rawInCloset = state.closet.some(
+        (i) => i.category === cat && !config.avoidCategories.includes(i.category),
+      );
+      const blockedInCloset = state.closet.some(
+        (i) => i.category === cat && isBlocked(i.name, blocked),
+      );
+      if (blockedInCloset && !rawInCloset) {
+        missingWarnings.push(
+          `⚠ Your ${cat} items are not suitable for a ${config.label.toLowerCase()} look. Please add ${description} to your closet.`,
+        );
+      } else if (!rawInCloset) {
+        missingWarnings.push(
+          `⚠ No ${cat} found in your closet for this style. Please add ${description} to your closet.`,
+        );
+      }
+    }
+  }
+
+  return { picks, missingWarnings };
+}
+
 const weatherCodes = new Map([
-  [0, "Clear"],
-  [1, "Mostly clear"],
-  [2, "Partly cloudy"],
-  [3, "Cloudy"],
-  [45, "Foggy"],
-  [48, "Foggy"],
-  [51, "Drizzle"],
-  [53, "Drizzle"],
-  [55, "Drizzle"],
-  [61, "Rainy"],
-  [63, "Rainy"],
-  [65, "Heavy rain"],
-  [71, "Snowy"],
-  [73, "Snowy"],
-  [75, "Heavy snow"],
-  [80, "Showers"],
-  [81, "Showers"],
-  [82, "Heavy showers"],
+  [0, "Clear"], [1, "Mostly clear"], [2, "Partly cloudy"], [3, "Cloudy"],
+  [45, "Foggy"], [48, "Foggy"], [51, "Drizzle"], [53, "Drizzle"], [55, "Drizzle"],
+  [61, "Rainy"], [63, "Rainy"], [65, "Heavy rain"],
+  [71, "Snowy"], [73, "Snowy"], [75, "Heavy snow"],
+  [80, "Showers"], [81, "Showers"], [82, "Heavy showers"],
   [95, "Stormy"],
 ]);
 
@@ -98,7 +238,6 @@ function localDateKey(date) {
 function initDays() {
   const formatter = new Intl.DateTimeFormat("en-US", { weekday: "long", day: "numeric", month: "long" });
   const today = new Date();
-
   for (let index = 0; index < 7; index += 1) {
     const date = new Date(today);
     date.setDate(today.getDate() + index);
@@ -145,7 +284,6 @@ function renderWeather() {
     chipSummary.textContent = "Waiting for location";
     return;
   }
-
   const summary = weatherCodes.get(weather.code) || "Variable";
   weatherStatus.textContent = `${weather.locationLabel} looks ${summary.toLowerCase()}. Last update: ${weather.updatedAt}.`;
   chipTemp.textContent = `${Math.round(weather.temp)}°`;
@@ -164,7 +302,6 @@ function nearestWeatherForSelection(hourly) {
   const target = `${selectedDate}T${startTime}`;
   const index = hourly.time.findIndex((time) => time >= target);
   const safeIndex = index >= 0 ? index : 0;
-
   return {
     temp: hourly.temperature_2m[safeIndex],
     wind: hourly.wind_speed_10m[safeIndex],
@@ -208,17 +345,14 @@ function fetchWeather() {
   weatherStatus.textContent = "Loading weather...";
   refreshWeather.disabled = true;
   refreshWeather.textContent = "Refreshing";
-
   const finish = () => {
     refreshWeather.disabled = false;
     refreshWeather.textContent = "Refresh weather";
   };
-
   if (!navigator.geolocation) {
     loadDefaultWeather().finally(finish);
     return;
   }
-
   navigator.geolocation.getCurrentPosition(
     async ({ coords }) => {
       try {
@@ -229,19 +363,14 @@ function fetchWeather() {
         finish();
       }
     },
-    () => {
-      loadDefaultWeather().finally(finish);
-    },
+    () => { loadDefaultWeather().finally(finish); },
     { enableHighAccuracy: false, timeout: 8000, maximumAge: 0 },
   );
 }
 
 function fallbackWeather() {
   return {
-    temp: 18,
-    wind: 12,
-    precip: 20,
-    code: 2,
+    temp: 18, wind: 12, precip: 20, code: 2,
     locationLabel: "sample location",
     updatedAt: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
   };
@@ -258,24 +387,6 @@ function buildWeatherAdvice(weather, prefs) {
   return pieces;
 }
 
-function piecesFromCloset(style, weather) {
-  const byCategory = (category) => state.closet.filter((item) => item.category === category);
-  const pick = (category) => {
-    const list = byCategory(category);
-    return list.length ? list[Math.floor(Math.random() * list.length)] : null;
-  };
-  const picks = [];
-
-  if (style === "wedding") {
-    picks.push(pick("dress") || pick("top"));
-  } else {
-    picks.push(pick("top"), pick("bottom"));
-  }
-
-  if (weather.temp <= 18 || weather.wind >= 20 || weather.precip >= 45) picks.push(pick("outerwear"));
-  picks.push(pick("shoes"), pick("accessory"));
-  return picks.filter(Boolean);
-}
 
 function generateOutfit(formData) {
   const style = formData.get("style");
@@ -288,26 +399,37 @@ function generateOutfit(formData) {
     photoAware: document.querySelector("#photoAware").checked,
   };
   const weather = state.weather || fallbackWeather();
+  const config = styleConfig[style];
   const weatherPieces = buildWeatherAdvice(weather, prefs);
-  const selectedStyle = styleCopy[style];
-  const closetPieces = piecesFromCloset(style, weather);
+
+  const { picks: closetPieces, missingWarnings } = pickClosetItemsForStyle(style, weather);
   const closetNames = closetPieces.map((item) => `${categoryLabels[item.category]}: ${item.name}`);
-  const photoNote = state.photo && prefs.photoAware
-    ? "Use the uploaded photo as the anchor piece, then match the color and formality around it."
+
+  const { score: harmonyScore, note: harmonyNote } = colorHarmonyScore(closetPieces);
+
+  let note = state.photo && prefs.photoAware
+    ? "The uploaded photo was used as the anchor piece."
     : closetPieces.length
-      ? "This recommendation uses pieces saved in your closet."
-      : "Your closet has no matching pieces yet, so this uses general wardrobe suggestions.";
+      ? `Pieces selected by formality match for ${config.label.toLowerCase()} style.`
+      : "No matching closet pieces — using general wardrobe suggestions.";
+
+  if (missingWarnings.length) {
+    note += "\n" + missingWarnings.join("\n");
+  }
 
   return {
     id: crypto.randomUUID(),
-    title: `${selectedStyle.label} outfit`,
+    title: `${config.label} outfit`,
     meta: `${dayText} ${startTime}-${endTime}`,
-    summary: `${Math.round(weather.temp)}°C and ${weatherCodes.get(weather.code) || "variable"} weather: ${selectedStyle.mood}.`,
-    items: [...closetNames, ...(closetNames.length ? [] : selectedStyle.base), ...weatherPieces],
-    note: photoNote,
+    summary: `${Math.round(weather.temp)}°C and ${weatherCodes.get(weather.code) || "variable"} weather — ${config.mood}.`,
+    items: [...closetNames, ...(closetNames.length ? [] : config.base), ...weatherPieces],
+    note,
     image: closetPieces[0]?.image || state.photo,
     closetPieces,
-    tags: [selectedStyle.label, `${Math.round(weather.temp)}°C`, closetPieces.length ? "From closet" : "General idea"],
+    harmonyScore,
+    harmonyNote,
+    missingWarnings,
+    tags: [config.label, `${Math.round(weather.temp)}°C`, `Harmony ${harmonyScore}%`, closetPieces.length ? "From closet" : "General idea"],
     createdAt: new Date().toLocaleString("en-US"),
   };
 }
@@ -326,29 +448,51 @@ async function generateOutfitWithPython(formData) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      style,
-      startTime,
-      endTime,
-      dayText,
-      prefs,
+      style, startTime, endTime, dayText, prefs,
       weather: state.weather || fallbackWeather(),
       closet: state.closet,
       photo: state.photo,
       hasPhoto: Boolean(state.photo),
     }),
   });
-
   if (!response.ok) throw new Error("Python recommendation failed");
   return response.json();
 }
 
+
+function harmonyBarHTML(score, note) {
+  if (score === undefined || score === null) return "";
+  const color = score >= 80 ? "var(--sage-dark)" : score >= 50 ? "var(--gold)" : "var(--coral)";
+  return `
+    <div class="harmony-bar-wrap">
+      <div class="harmony-bar-label">
+        <span>Color harmony</span>
+        <strong style="color:${color}">${score}%</strong>
+      </div>
+      <div class="harmony-bar-track">
+        <div class="harmony-bar-fill" style="width:${score}%;background:${color}"></div>
+      </div>
+      <p class="muted harmony-note">${note}</p>
+    </div>
+  `;
+}
+
 function renderRecommendation(rec) {
+  const warnings = rec.missingWarnings || [];
+  const warningsHTML = warnings.length
+    ? `<div class="missing-warning">${warnings.map((w) => `<p>${w}</p>`).join("")}</div>`
+    : "";
+
+  const noteLines = (rec.note || "").split("\n").filter(Boolean);
+  const mainNote = noteLines[0] || "";
+
   outfitCard.innerHTML = `
     <div>
       <div class="tag-row">${rec.tags.map((tag) => `<span class="tag">${tag}</span>`).join("")}</div>
       <h2>${rec.title}</h2>
       <p>${rec.summary}</p>
     </div>
+    ${warningsHTML}
     ${rec.closetPieces?.length ? `<div class="mini-closet">${rec.closetPieces.map((item) => `
       <figure>
         <img src="${item.image}" alt="${item.name}" />
@@ -356,7 +500,8 @@ function renderRecommendation(rec) {
       </figure>
     `).join("")}</div>` : ""}
     <ul>${rec.items.map((item) => `<li>${item}</li>`).join("")}</ul>
-    <p class="muted">${rec.note}</p>
+    ${harmonyBarHTML(rec.harmonyScore, rec.harmonyNote)}
+    <p class="muted">${mainNote}</p>
   `;
   saveOutfit.disabled = false;
   rejectOutfit.disabled = false;
@@ -367,7 +512,6 @@ function renderSaved() {
     savedList.innerHTML = '<p class="muted">No saved outfits yet.</p>';
     return;
   }
-
   savedList.innerHTML = state.saved.map((item) => `
     <article class="saved-item">
       ${item.image ? `<img src="${item.image}" alt="${item.title}" />` : "<div></div>"}
@@ -388,7 +532,6 @@ function renderCloset() {
     closetGrid.innerHTML = '<p class="muted">Your closet is empty. Upload or capture a photo, then add an item name and category.</p>';
     return;
   }
-
   closetGrid.innerHTML = state.closet.map((item) => `
     <article class="closet-item">
       <img src="${item.image}" alt="${item.name}" />
@@ -398,6 +541,8 @@ function renderCloset() {
     </article>
   `).join("");
 }
+
+
 
 photoInput.addEventListener("change", (event) => {
   const file = event.target.files?.[0];
@@ -437,20 +582,12 @@ addToCloset.addEventListener("click", () => {
     alert("Upload or capture a clothing photo first.");
     return;
   }
-
   const category = closetCategory.value;
   const name = closetName.value.trim() || `${categoryLabels[category]} item`;
   state.closet = [
-    {
-      id: crypto.randomUUID(),
-      name,
-      category,
-      image: state.photo,
-      createdAt: new Date().toLocaleString("en-US"),
-    },
+    { id: crypto.randomUUID(), name, category, image: state.photo, createdAt: new Date().toLocaleString("en-US") },
     ...state.closet,
   ].slice(0, 60);
-
   saveCloset();
   renderCloset();
   closetName.value = "";
@@ -513,13 +650,8 @@ clearCloset.addEventListener("click", () => {
   renderCloset();
 });
 
-daySelect.addEventListener("change", () => {
-  if (state.weather) fetchWeather();
-});
-
-document.querySelector("#startTime").addEventListener("change", () => {
-  if (state.weather) fetchWeather();
-});
+daySelect.addEventListener("change", () => { if (state.weather) fetchWeather(); });
+document.querySelector("#startTime").addEventListener("change", () => { if (state.weather) fetchWeather(); });
 
 initDays();
 if (state.photo) setPhoto(state.photo);
