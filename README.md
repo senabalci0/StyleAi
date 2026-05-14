@@ -13,7 +13,7 @@ python server.py
 Then open:
 
 ```text
-http://127.0.0.1:5173
+http://127.0.0.1:5372
 ```
 
 No external Python package is required. The Python server serves the HTML, CSS,
@@ -26,7 +26,7 @@ JavaScript fallback recommendation engine.
 1. Open this folder in PyCharm.
 2. Open `server.py`.
 3. Press Run.
-4. Visit `http://127.0.0.1:5173`.
+4. Visit `http://127.0.0.1:5372`.
 
 ## Features
 
@@ -49,4 +49,4 @@ JavaScript fallback recommendation engine.
 4. Press `Add to closet`.
 5. The app will try to build outfits using saved closet items.
 
-   test123
+   
