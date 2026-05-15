@@ -133,33 +133,6 @@ When you click **Suggest outfit**, the following happens:
 
 ---
 
-## Recommendation Rules per Style
-
-### Casual
-- Picks from: top, bottom, shoes, accessory
-- Skips: dress / suit category
-- Blocks: suit, blazer, tuxedo, gown, heels, tie, bow tie
-- Required: top, bottoms, shoes
-
-### Sport
-- Picks from: top, bottom, shoes
-- Skips: dress, accessory
-- Blocks: suit, blazer, heels, dress shirt, loafer, oxford, jeans, chinos, trousers
-- Required: sport top, sport bottoms, sport shoes
-
-### Smart
-- Picks from: top, bottom, outerwear, shoes, accessory
-- Blocks: t-shirt, hoodie, sweatshirt, jogger, legging, shorts, flip flop, crocs, tracksuit, eşofman
-- Required: smart top, smart bottoms, smart shoes
-
-### Wedding
-- Picks from: dress (Dress / suit category), shoes, accessory
-- Skips: top, bottom categories entirely
-- Blocks: t-shirt, hoodie, jogger, sneaker, jeans, chinos, cargo, parka, puffer, eşofman
-- Required: a dress or suit saved under the "Dress / suit" category
-
----
-
 ## Data Storage
 
 All data is stored in the browser's localStorage — nothing is sent to any external server except the weather API request. No account or login is required.
@@ -170,12 +143,3 @@ All data is stored in the browser's localStorage — nothing is sent to any exte
 | `styleai-closet` | Array of closet items (max 60) |
 | `styleai-saved` | Array of saved outfits (max 12) |
 
----
-
-## Technical Notes
-
-- The Python server serves all static files (HTML, CSS, JS) and handles `POST /api/recommend`.
-- CORS headers are set on all responses so the app can also be tested from a different origin if needed.
-- The JS fallback engine (`generateOutfit`) mirrors the Python logic exactly — same blocked keywords, same formality scoring, same missing category warnings — so the output is consistent whether or not the server is running.
-- Weather data comes from the Open-Meteo free API. No API key is required.
-- The app uses `DM Serif Display` and `DM Sans` from Google Fonts for typography.
